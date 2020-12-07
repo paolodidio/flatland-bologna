@@ -91,6 +91,16 @@ optional arguments:
 
 [![](https://i.imgur.com/Lqrq5GE.png)](https://app.wandb.ai/masterscrat/flatland-examples-reinforcement_learning/reports/Flatland-Examples--VmlldzoxNDI2MTA) 
 
+Credits
+---
+
+* Florian Laurent <florian@aicrowd.com>
+* Erik Nygren <erik.nygren@sbb.ch>
+* Adrian Egli <adrian.egli@sbb.ch>
+* Sharada Mohanty <mohanty@aicrowd.com>
+* Christian Baumberger <christian.baumberger@sbb.ch>
+* Guillaume Mollard <guillaume.mollard2@gmail.com>
+
 Main links
 ---
 
