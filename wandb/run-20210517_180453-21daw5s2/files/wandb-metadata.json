@@ -1,0 +1,25 @@
+{
+    "os": "Linux-5.4.72-microsoft-standard-WSL2-x86_64-with-debian-bullseye-sid",
+    "python": "3.6.8",
+    "heartbeatAt": "2021-05-17T16:04:54.675806",
+    "startedAt": "2021-05-17T16:04:53.693264",
+    "docker": null,
+    "cpu_count": 12,
+    "cuda": null,
+    "args": [
+        "-n",
+        "300"
+    ],
+    "state": "running",
+    "program": "test1.py",
+    "codePath": "test1.py",
+    "git": {
+        "remote": "https://gitlab.aicrowd.com/flatland/flatland-starter-kit.git/",
+        "commit": "691d1b64347a36e077f3b82c39ffa6ebf3288070"
+    },
+    "email": null,
+    "root": "/home/pdidio/test/flatland-starter-kit",
+    "host": "LAPTOP-U4I5V6NL",
+    "username": "pdidio",
+    "executable": "/home/pdidio/miniconda3/envs/flatland-rl/bin/python"
+}
