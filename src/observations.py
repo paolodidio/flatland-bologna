@@ -13,7 +13,7 @@ from flatland.core.grid.grid4_utils import get_new_position
 from flatland.core.grid.grid_utils import coordinate_to_position
 from flatland.envs.agent_utils import RailAgentStatus, EnvAgent
 from flatland.utils.ordered_set import OrderedSet
-
+from src.graph.graph import Graph
 
 
 Node = collections.namedtuple('Node', 'dist_own_target_encountered '
@@ -29,6 +29,31 @@ Node = collections.namedtuple('Node', 'dist_own_target_encountered '
                                         'speed_min_fractional '
                                         'num_agents_ready_to_depart '
                                         'childs')
+class GraphObsForRailEnv(ObservationBuilder):
+    def __init__(self, max_depth: int, predictor: PredictionBuilder = None):
+        super().__init__()
+        self.graph = nx.Graph()
+        self.agent_at_position = {}
+        self.max_propagation_steps = max_propagation_steps
+    
+    def reset(self):
+        Graph(self.env.rail.grid)
+        # Reset internal values
+        
+
+
+    def get_many(self, handles: Optional[List[int]] = None):
+        observations = super().get_many(handles)
+        return observations
+
+    def get_many(self, handles: Optional[List[int]] = None):
+        # Update the position of all agents present in the grid
+        self.agent_at_position = {agent.position: agent.handle
+                                  for agent in self.env.agents if agent.position is not None}
+
+
+    def get(self, handle: int = 0):
+        pass
 
 class TreeObsForRailEnv(ObservationBuilder):
     """
