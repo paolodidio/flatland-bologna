@@ -4,6 +4,8 @@ from argparse import ArgumentParser, Namespace
 from collections import deque
 from pathlib import Path
 
+from networkx.readwrite.json_graph import tree
+
 base_dir = Path(__file__).resolve().parent.parent
 sys.path.append(str(base_dir))
 
@@ -17,6 +19,7 @@ from flatland.envs.rail_generators import sparse_rail_generator
 from flatland.envs.schedule_generators import sparse_schedule_generator
 from utils.observation_utils import normalize_observation
 from flatland.envs.observations import TreeObsForRailEnv
+from src.observations import GraphObsForRailEnv
 from src.utils.action_required import is_action_required
 """
 This file shows how to train a single agent using a reinforcement learning approach.
@@ -27,7 +30,7 @@ multi_agent_training.py is a better starting point to train your own solution!
 """
 
 
-def train_agent(n_episodes):
+def train_agent(n_episodes, render = False):
     # Environment parameters
     n_agents = 1
     x_dim = 25
@@ -49,9 +52,9 @@ def train_agent(n_episodes):
     # Set the seeds
     random.seed(seed)
     np.random.seed(seed)
-
     # Observation builder
-    tree_observation = TreeObsForRailEnv(max_depth=observation_tree_depth)
+    # tree_observation = TreeObsForRailEnv(max_depth=observation_tree_depth)
+    graph_observation = GraphObsForRailEnv(max_depth=observation_tree_depth)
 
     # Setup the environment
     env = RailEnv(
@@ -60,18 +63,18 @@ def train_agent(n_episodes):
         rail_generator=sparse_rail_generator(
             max_num_cities=n_cities,
             seed=seed,
-            grid_mode=False,
+            grid_mode=True,
             max_rails_between_cities=max_rails_between_cities,
             max_rails_in_city=max_rails_in_city
         ),
         schedule_generator=sparse_schedule_generator(),
         number_of_agents=n_agents,
-        obs_builder_object=tree_observation
+        # obs_builder_object=tree_observation
+        obs_builder_object=graph_observation
     )
-
     env.reset(True, True)
-
-    env_renderer = RenderTool(env, gl="PGL")
+    if render:
+        env_renderer = RenderTool(env, gl="PGL")
 
     # Calculate the state size given the depth of the tree observation and the number of features
     n_features_per_node = env.obs_builder.observation_dim
@@ -121,7 +124,8 @@ def train_agent(n_episodes):
 
         # Reset environment
         obs, info = env.reset(regenerate_rail=True, regenerate_schedule=True)
-        env_renderer.set_new_rail()
+        if render:
+            env_renderer.set_new_rail()
         # Build agent specific observations
         for agent in env.get_agent_handles():
             if obs[agent]:
@@ -146,7 +150,8 @@ def train_agent(n_episodes):
                 action_dict.update({agent: action})
             # Environment step
             next_obs, all_rewards, done, info = env.step(action_dict)
-            env_renderer.render_env(
+            if render:
+                env_renderer.render_env(
                     show=True,
                     frames=False,
                     show_observations=False,

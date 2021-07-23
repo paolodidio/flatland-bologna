@@ -43,21 +43,21 @@ def check_if_all_blocked(env):
 
     
 
-not_in_deadlock = {}
+# not_in_deadlock = {}
 
-def is_blocked(agent):
-    all_blocked = True
-    foreach possible_node:
-        others = get_agents(possible_node)
-        if others is empty
-            not_in_deadlock.add(agent)
-            return False
-        if not_in_deadlock[others[0]]:
-            not_in_deadlock.add(agent)
-            return False
-        if_other_agent_blocked = is_blocked(agent)
-        if not if_other_agent_blocked:
-            not_in_deadlock.add(agent)
-            return False
-    return True
+# def is_blocked(agent):
+#     all_blocked = True
+#     foreach possible_node:
+#         others = get_agents(possible_node)
+#         if others is empty
+#             not_in_deadlock.add(agent)
+#             return False
+#         if not_in_deadlock[others[0]]:
+#             not_in_deadlock.add(agent)
+#             return False
+#         if_other_agent_blocked = is_blocked(agent)
+#         if not if_other_agent_blocked:
+#             not_in_deadlock.add(agent)
+#             return False
+#     return True
     
