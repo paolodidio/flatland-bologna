@@ -30,7 +30,7 @@ multi_agent_training.py is a better starting point to train your own solution!
 """
 
 
-def train_agent(n_episodes, render = False):
+def train_agent(n_episodes, render = True):
     # Environment parameters
     n_agents = 1
     x_dim = 25
@@ -75,7 +75,14 @@ def train_agent(n_episodes, render = False):
     env.reset(True, True)
     if render:
         env_renderer = RenderTool(env, gl="PGL")
-
+        env_renderer.set_new_rail()
+        env_renderer.render_env(
+                    show=True,
+                    frames=False,
+                    show_observations=False,
+                    show_predictions=False,
+                    show_rowcols=True
+                )
     # Calculate the state size given the depth of the tree observation and the number of features
     n_features_per_node = env.obs_builder.observation_dim
     n_nodes = 0

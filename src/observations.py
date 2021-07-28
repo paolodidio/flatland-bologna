@@ -32,12 +32,11 @@ Node = collections.namedtuple('Node', 'dist_own_target_encountered '
 class GraphObsForRailEnv(ObservationBuilder):
     def __init__(self, max_depth: int, predictor: PredictionBuilder = None):
         super().__init__()
-        self.graph = nx.Graph()
         self.agent_at_position = {}
-        self.max_propagation_steps = max_propagation_steps
+        # self.max_propagation_steps = max_propagation_steps
     
     def reset(self):
-        Graph(self.env.rail.grid)
+        Graph(self.env)
         # Reset internal values
         
 
