@@ -12,7 +12,7 @@ import torch
 from flatland.envs.malfunction_generators import malfunction_from_params, MalfunctionParameters
 from flatland.envs.observations import TreeObsForRailEnv
 from flatland.envs.predictions import ShortestPathPredictorForRailEnv
-from flatland.envs.rail_env import RailEnv
+from utils.rail_env_reward import RailEnvRew
 from flatland.envs.rail_generators import sparse_rail_generator
 from flatland.envs.schedule_generators import sparse_schedule_generator
 from flatland.utils.rendertools import RenderTool
@@ -71,7 +71,7 @@ def eval_policy(env_params, checkpoint, n_eval_episodes, max_steps, action_size,
     tree_observation = TreeObsForRailEnv(max_depth=observation_tree_depth, predictor=predictor)
 
     # Setup the environment
-    env = RailEnv(
+    env = RailEnvRew(
         width=x_dim, height=y_dim,
         rail_generator=sparse_rail_generator(
             max_num_cities=n_cities,

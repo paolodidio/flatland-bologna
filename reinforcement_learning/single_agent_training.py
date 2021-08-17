@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 
-from flatland.envs.rail_env import RailEnv
+from utils.rail_env_reward import RailEnvRew
 from flatland.envs.rail_generators import sparse_rail_generator
 from flatland.envs.schedule_generators import sparse_schedule_generator
 from utils.observation_utils import normalize_observation
@@ -54,7 +54,7 @@ def train_agent(n_episodes):
     tree_observation = TreeObsForRailEnv(max_depth=observation_tree_depth)
 
     # Setup the environment
-    env = RailEnv(
+    env = RailEnvRew(
         width=x_dim,
         height=y_dim,
         rail_generator=sparse_rail_generator(

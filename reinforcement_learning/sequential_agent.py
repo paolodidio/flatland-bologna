@@ -3,7 +3,7 @@ import numpy as np
 
 from flatland.envs.observations import TreeObsForRailEnv
 from flatland.envs.predictions import ShortestPathPredictorForRailEnv
-from flatland.envs.rail_env import RailEnv
+from utils.rail_env_reward import RailEnvRew
 from flatland.envs.rail_generators import complex_rail_generator
 from flatland.envs.schedule_generators import complex_schedule_generator
 from flatland.utils.rendertools import RenderTool
@@ -29,7 +29,7 @@ n_agents = np.random.randint(3, 8)
 n_goals = n_agents + np.random.randint(0, 3)
 min_dist = int(0.75 * min(x_dim, y_dim))
 
-env = RailEnv(
+env = RailEnvRew(
     width=x_dim,
     height=y_dim,
     rail_generator=complex_rail_generator(
