@@ -27,9 +27,9 @@ multi_agent_training.py is a better starting point to train your own solution!
 """
 
 
-def train_agent(n_episodes):
+def train_agent(n_episodes, render = False):
     # Environment parameters
-    n_agents = 1
+    n_agents = 2
     x_dim = 25
     y_dim = 25
     n_cities = 4
@@ -70,8 +70,8 @@ def train_agent(n_episodes):
     )
 
     env.reset(True, True)
-
-    env_renderer = RenderTool(env, gl="PGL")
+    if render:
+        env_renderer = RenderTool(env, gl="PGL")
 
     # Calculate the state size given the depth of the tree observation and the number of features
     n_features_per_node = env.obs_builder.observation_dim
@@ -144,12 +144,13 @@ def train_agent(n_episodes):
 
             # Environment step
             next_obs, all_rewards, done, info = env.step(action_dict)
-            env_renderer.render_env(
-                    show=True,
-                    frames=False,
-                    show_observations=False,
-                    show_predictions=False
-                )
+            if render:
+                env_renderer.render_env(
+                        show=True,
+                        frames=False,
+                        show_observations=False,
+                        show_predictions=False
+                    )
             # Update replay buffer and train agent
             for agent in range(env.get_num_agents()):
                 # Only update the values when we are done or when an action was taken and thus relevant information is present

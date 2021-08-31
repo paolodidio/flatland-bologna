@@ -1,26 +1,26 @@
 import random
 import sys
+
 from argparse import ArgumentParser, Namespace
 from collections import deque
 from pathlib import Path
-
-from networkx.readwrite.json_graph import tree
-
 base_dir = Path(__file__).resolve().parent.parent
 sys.path.append(str(base_dir))
 
-from  src.dddqn_policy import DDDQNPolicy
+from src.dddqn_policy import DDDQNPolicy
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
-from flatland.utils.rendertools import RenderTool
+
 from flatland.envs.rail_env import RailEnv
+from flatland.utils.rendertools import RenderTool
 from flatland.envs.rail_generators import sparse_rail_generator
 from flatland.envs.schedule_generators import sparse_schedule_generator
 from utils.observation_utils import normalize_observation
 from flatland.envs.observations import TreeObsForRailEnv
-from src.observations import GraphObsForRailEnv
+from src.observations import TreeObsForRailEnvUsingGraph
 from src.utils.action_required import is_action_required
+
 """
 This file shows how to train a single agent using a reinforcement learning approach.
 Documentation: https://flatland.aicrowd.com/getting-started/rl/single-agent.html
@@ -32,7 +32,7 @@ multi_agent_training.py is a better starting point to train your own solution!
 
 def train_agent(n_episodes, render = True):
     # Environment parameters
-    n_agents = 1
+    n_agents = 2
     x_dim = 25
     y_dim = 25
     n_cities = 4
@@ -41,7 +41,7 @@ def train_agent(n_episodes, render = True):
     seed = 42
 
     # Observation parameters
-    observation_tree_depth = 5
+    observation_tree_depth = 2
     observation_radius = 10
 
     # Exploration parameters
@@ -52,10 +52,10 @@ def train_agent(n_episodes, render = True):
     # Set the seeds
     random.seed(seed)
     np.random.seed(seed)
+
     # Observation builder
     # tree_observation = TreeObsForRailEnv(max_depth=observation_tree_depth)
-    graph_observation = GraphObsForRailEnv(max_depth=observation_tree_depth)
-
+    tree_observation = TreeObsForRailEnvUsingGraph(max_depth=observation_tree_depth)
     # Setup the environment
     env = RailEnv(
         width=x_dim,
@@ -63,26 +63,20 @@ def train_agent(n_episodes, render = True):
         rail_generator=sparse_rail_generator(
             max_num_cities=n_cities,
             seed=seed,
-            grid_mode=True,
+            grid_mode=False,
             max_rails_between_cities=max_rails_between_cities,
             max_rails_in_city=max_rails_in_city
         ),
         schedule_generator=sparse_schedule_generator(),
         number_of_agents=n_agents,
-        # obs_builder_object=tree_observation
-        obs_builder_object=graph_observation
+        obs_builder_object=tree_observation
     )
+
     env.reset(True, True)
     if render:
         env_renderer = RenderTool(env, gl="PGL")
-        env_renderer.set_new_rail()
-        env_renderer.render_env(
-                    show=True,
-                    frames=False,
-                    show_observations=False,
-                    show_predictions=False,
-                    show_rowcols=True
-                )
+    
+    
     # Calculate the state size given the depth of the tree observation and the number of features
     n_features_per_node = env.obs_builder.observation_dim
     n_nodes = 0
@@ -122,7 +116,7 @@ def train_agent(n_episodes, render = True):
         'hidden_size': 256,
         'use_gpu': False
     }
-    
+
     # Double Dueling DQN policy
     policy = DDDQNPolicy(state_size, action_size, Namespace(**training_parameters))
 
@@ -133,6 +127,19 @@ def train_agent(n_episodes, render = True):
         obs, info = env.reset(regenerate_rail=True, regenerate_schedule=True)
         if render:
             env_renderer.set_new_rail()
+            env_renderer.render_env(
+                show=True,  # whether to call matplotlib show() or equivalent after completion
+                show_agents=True,  # whether to include agents
+                show_inactive_agents=True,  # whether to show agents before they start
+                show_observations=False,  # whether to include observations
+                show_predictions=False,  # whether to include predictions
+                show_rowcols=True, # label the rows and columns
+                frames=False,  # frame counter to show (intended since invocation)
+                episode=True,  # int episode number to show
+                step=True,  # int step number to show in image
+                selected_agent=None,  # indicate which agent is "selected" in the editor):
+                return_image=False
+             )
         # Build agent specific observations
         for agent in env.get_agent_handles():
             if obs[agent]:
@@ -142,29 +149,39 @@ def train_agent(n_episodes, render = True):
         # Run episode
         for step in range(max_steps - 1):
             for agent in env.get_agent_handles():
+              
                 if info['action_required'][agent]:
-                    # If an action is required, we want to store the obs at that step as well as the action
-                    if is_action_required(agent, env):
+                   # If an action is required, we want to store the obs at that step as well as the action
+                    # if is_action_required(agent, env):
                         update_values = True
                         action = policy.act(agent_obs[agent], eps=eps_start)
                         action_count[action] += 1
-                    else:
-                        update_values = False
-                        action = 1
+                    # else: 
+                    #     update_values = False
+                    #     action = 1
+                    #     action_count[action] += 1   
                 else:
                     update_values = False
                     action = 0
                 action_dict.update({agent: action})
-            # Environment step
-            next_obs, all_rewards, done, info = env.step(action_dict)
+
             if render:
                 env_renderer.render_env(
-                    show=True,
-                    frames=False,
-                    show_observations=False,
-                    show_predictions=False
+                   show=True,  # whether to call matplotlib show() or equivalent after completion
+                   show_agents=True,  # whether to include agents
+                   show_inactive_agents=True,  # whether to show agents before they start
+                   show_observations=False,  # whether to include observations
+                   show_predictions=False,  # whether to include predictions
+                   show_rowcols=True, # label the rows and columns
+                   frames=False,  # frame counter to show (intended since invocation)
+                   episode=True,  # int episode number to show
+                   step=True,  # int step number to show in image
+                   selected_agent=None,  # indicate which agent is "selected" in the editor):
+                   return_image=False
                 )
-            
+            # Environment step
+            next_obs, all_rewards, done, info = env.step(action_dict)
+
             # Update replay buffer and train agent
             for agent in range(env.get_num_agents()):
                 # Only update the values when we are done or when an action was taken and thus relevant information is present
