@@ -606,19 +606,21 @@ class TreeObsForRailEnvUsingGraph(ObservationBuilder):
         for _agent in self.env.agents:
             # NOTE: should we include RailAgentStatus.DONE?
             if _agent.status in [RailAgentStatus.ACTIVE, RailAgentStatus.DONE] and _agent.position:
+                if _agent.position == (21,8):
+                        print()
                 for direction in Grid4TransitionsEnum:
                     if (_agent.position, direction) in self.map_graph.cell_connected_to_node:
-                        
-                        going_to_switch = (direction == _agent.direction)
+                        opposite_agent_direction = _agent.direction+2%4
+                        coming_from_switch = (direction == opposite_agent_direction)
                         node, distance = self.map_graph.cell_connected_to_node[(_agent.position, direction)]
-                        if going_to_switch:
+                        if coming_from_switch:
+                            if not node in self.node_has_agent_coming_from_switch:
+                                self.node_has_agent_coming_from_switch[node] = []
+                            self.node_has_agent_coming_from_switch[node].append((_agent.handle, distance)) 
+                        else:
                             if not node in self.node_has_agent_going_to_switch:
                                 self.node_has_agent_going_to_switch[node] = []
                             self.node_has_agent_going_to_switch[node].append((_agent.handle, distance))
-                        else:
-                            if not node in self.node_has_agent_coming_from_switch:
-                                self.node_has_agent_coming_from_switch[node] = []
-                            self.node_has_agent_coming_from_switch[node].append((_agent.handle, distance))
                         
                         #copy pasted the already existing algorithm (adapting it a bit)
                         if _agent.malfunction_data['malfunction'] > 0:
@@ -916,9 +918,10 @@ class TreeObsForRailEnvUsingGraph(ObservationBuilder):
         # NOTE: only opposite direction or also same direction?
         if graph_node in self.node_has_agent_coming_from_switch:
         # if len(self.node_has_agent_coming_from_switch) > 0 and graph_node in self.node_has_agent_coming_from_switch:
-            _, distances = zip(*self.node_has_agent_coming_from_switch[graph_node])
-            distances = list(filter(lambda x: x < agent_to_node_distance, distances))
-            if len(distances) > 0:
+            # handles, distances = zip(*self.node_has_agent_coming_from_switch[graph_node])
+            handle_distances = list(filter(lambda x: x[0]!=handle and x[1] < agent_to_node_distance, self.node_has_agent_coming_from_switch[graph_node]))
+            if len(handle_distances) > 0:
+                _, distances = zip(*handle_distances)
                 potential_conflict = tot_dist_next - np.max(distances)
         #endregion
         #region #4:
@@ -931,7 +934,6 @@ class TreeObsForRailEnvUsingGraph(ObservationBuilder):
         # if self.predictor and predicted_time < self.max_prediction_depth:
         #     int_position = coordinate_to_position(self.env.width, [position])
         #     if tot_dist < self.max_prediction_depth:
-                
         #         pre_step = max(0, predicted_time - 1)
         #         post_step = min(self.max_prediction_depth - 1, predicted_time + 1)
 
@@ -945,7 +947,6 @@ class TreeObsForRailEnvUsingGraph(ObservationBuilder):
         #                     potential_conflict = tot_dist
         #                 if self.env.agents[ca].status == RailAgentStatus.DONE and tot_dist < potential_conflict:
         #                     potential_conflict = tot_dist
-                            
         #         # Look for conflicting paths at distance num_step-1
         #         elif int_position in np.delete(self.predicted_pos[pre_step], handle, 0):
         #             conflicting_agent = np.where(self.predicted_pos[pre_step] == int_position)
@@ -956,7 +957,6 @@ class TreeObsForRailEnvUsingGraph(ObservationBuilder):
         #                     potential_conflict = tot_dist
         #                 if self.env.agents[ca].status == RailAgentStatus.DONE and tot_dist < potential_conflict:
         #                     potential_conflict = tot_dist
-                            
         #         # Look for conflicting paths at distance num_step+1
         #         elif int_position in np.delete(self.predicted_pos[post_step], handle, 0):
         #             conflicting_agent = np.where(self.predicted_pos[post_step] == int_position)
@@ -967,7 +967,7 @@ class TreeObsForRailEnvUsingGraph(ObservationBuilder):
         #                     potential_conflict = tot_dist
         #                 if self.env.agents[ca].status == RailAgentStatus.DONE and tot_dist < potential_conflict:
         #                     potential_conflict = tot_dist
-
+            
         #endregion
         #region  #5:
         #     if an not usable switch (for agent) is detected we store the distance.

@@ -1,13 +1,19 @@
 import random
 import sys
-
+# import time
+# start = time.process_time()
+# end = time.process_time()
+# print(end - start)
 from argparse import ArgumentParser, Namespace
 from collections import deque
 from pathlib import Path
+
+
+
 base_dir = Path(__file__).resolve().parent.parent
 sys.path.append(str(base_dir))
 
-from src.dddqn_policy import DDDQNPolicy
+from reinforcement_learning.dddqn_policy import DDDQNPolicy
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
@@ -20,6 +26,7 @@ from utils.observation_utils import normalize_observation
 from flatland.envs.observations import TreeObsForRailEnv
 from src.observations import TreeObsForRailEnvUsingGraph
 from src.utils.action_required import is_action_required
+from flatland.envs.predictions import ShortestPathPredictorForRailEnv
 
 """
 This file shows how to train a single agent using a reinforcement learning approach.
@@ -32,7 +39,7 @@ multi_agent_training.py is a better starting point to train your own solution!
 
 def train_agent(n_episodes, render = True):
     # Environment parameters
-    n_agents = 2
+    n_agents = 3
     x_dim = 25
     y_dim = 25
     n_cities = 4
@@ -43,7 +50,8 @@ def train_agent(n_episodes, render = True):
     # Observation parameters
     observation_tree_depth = 2
     observation_radius = 10
-
+    observation_max_path_depth = 30
+    
     # Exploration parameters
     eps_start = 1.0
     eps_end = 0.01
@@ -55,7 +63,8 @@ def train_agent(n_episodes, render = True):
 
     # Observation builder
     # tree_observation = TreeObsForRailEnv(max_depth=observation_tree_depth)
-    tree_observation = TreeObsForRailEnvUsingGraph(max_depth=observation_tree_depth)
+    predictor = ShortestPathPredictorForRailEnv(max_depth=observation_max_path_depth)
+    tree_observation = TreeObsForRailEnvUsingGraph(max_depth=observation_tree_depth, predictor=predictor)
     # Setup the environment
     env = RailEnv(
         width=x_dim,

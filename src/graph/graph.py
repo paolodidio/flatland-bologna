@@ -54,7 +54,7 @@ class Graph:
                                             # next_direction = direction where I'll be coming from the next node
                                             # (next_row, next_column, next_direction, distance) = already_explored[(row, column, direction_transition)]
                                         (next_row, next_column, next_direction, distance, path) = self._explore_branch(row, column, direction_transition, 1, [])
-                                        self.cell_connected_to_node[((row, column), int(direction))] = ((row, column, int(direction)), distance)
+                                        self.cell_connected_to_node[((row, column), int(direction))] = ((row, column, int(direction)), 0)
                                         for cell_y, cell_x, cell_direction, distance_from_previous_node in path:
                                             self.cell_connected_to_node[((cell_y, cell_x), cell_direction)] = ((next_row, next_column, int(next_direction)), distance - distance_from_previous_node)
                                         self.graph.add_edge((row, column, int(direction)), (next_row, next_column, int(next_direction)), direction = int(direction_transition), distance = distance)                                            
@@ -82,5 +82,6 @@ class Graph:
         nx.draw(self.graph, pos, with_labels=True)
         direction_labels = nx.get_edge_attributes(self.graph,'direction')
         distance_labels = nx.get_edge_attributes(self.graph,'distance')
-        nx.draw_networkx_edge_labels(self.graph, pos, edge_labels=direction_labels)
+        # nx.draw_networkx_edge_labels(self.graph, pos, edge_labels=direction_labels)
+        nx.draw_networkx_edge_labels(self.graph, pos, edge_labels=distance_labels)
         plt.show()
