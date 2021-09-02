@@ -4,6 +4,7 @@ Collection of environment-specific ObservationBuilder.
 import collections
 from typing import Optional, List, Dict, Tuple
 from networkx.classes import graph
+from networkx.drawing.nx_pylab import draw
 
 import numpy as np
 
@@ -15,6 +16,7 @@ from flatland.core.grid.grid4_utils import get_new_position
 from flatland.core.grid.grid_utils import coordinate_to_position
 from flatland.envs.agent_utils import RailAgentStatus, EnvAgent
 from flatland.utils.ordered_set import OrderedSet
+from numpy.core.numeric import NaN
 from src.graph.graph import Graph
 import networkx as nx
 from flatland.core.grid.grid4 import Grid4TransitionsEnum
@@ -574,23 +576,37 @@ class TreeObsForRailEnvUsingGraph(ObservationBuilder):
         in the `handles` list.
         """
         if self.predictor:
-            self.max_prediction_depth = 0
-            self.max_prediction_depth = 0
-            self.predicted_pos = {}
-            self.predicted_dir = {}
+            #TODO: implement switch
+            self.node_has_predicted_train = {}
             self.predictions = self.predictor.get()
             if self.predictions:
                 for t in range(self.predictor.max_depth + 1):
-                    pos_list = []
-                    dir_list = []
                     for a in handles:
                         if self.predictions[a] is None:
                             continue
-                        pos_list.append(self.predictions[a][t][1:3])
-                        dir_list.apprend(self.predictions[a][t][3])
-                    self.predicted_pos.update({t: coordinate_to_position(self.env.width, pos_list)})
-                    self.predicted_dir.update({t: dir_list})
-                self.max_prediction_depth = len(self.predicted_pos)
+                        pos = self.predictions[a][t][1:3]
+                        dir = self.predictions[a][t][3]
+                        opposite_dir = dir+2%4
+                        if pos[0] == pos[0] and pos[1] == pos[1]: 
+                            pos = (int(pos[0]), int(pos[1]))
+                            full_transitions = bin(self.env.rail.get_full_transitions(*pos))
+                            for direction in Grid4TransitionsEnum:
+                                if full_transitions.count('1') > 2 and direction == dir:
+                                    continue
+                                if opposite_dir == direction:
+                                    if (pos, direction) in self.map_graph.cell_connected_to_node:
+                                        node, distance = self.map_graph.cell_connected_to_node[(pos, direction)]
+                                        if node not in self.node_has_predicted_train:
+                                            self.node_has_predicted_train[node] = {}
+                                        if a not in self.node_has_predicted_train[node]:
+                                            self.node_has_predicted_train[node][a] = (t,distance)
+                                        else:
+                                            t1, distance1 = self.node_has_predicted_train[node][a]
+                                            self.node_has_predicted_train[node][a] =  (t1, distance1) if distance1 < distance  else (t, distance)                        
+                    #     pos_list.append(self.predictions[a][t][1:3])
+                    #     dir_list.append(self.predictions[a][t][3])
+                    # self.predicted_pos.update({t: coordinate_to_position(self.env.width, pos_list)})
+                    # self.predicted_dir.update({t: dir_list})
 
         self.node_has_agent_going_to_switch = {}
         self.node_has_agent_coming_from_switch = {}
@@ -930,7 +946,22 @@ class TreeObsForRailEnvUsingGraph(ObservationBuilder):
         #      distance in number of cells from current agent position
 
         #     0 = No other agent reserve the same cell at similar time
-        # predicted_time = int(tot_dist * time_per_cell)
+        predicted_time = int(tot_dist * time_per_cell)
+        if self.predictor:
+            # if tot_dist < self.max_prediction_depth:
+            pre_step = max(0, predicted_time - tot_dist_next * time_per_cell)
+            post_step = max(0, predicted_time)
+            if graph_node in self.node_has_predicted_train:
+                for a in self.env.agents:
+                    if a.handle == handle:
+                        continue
+                    if a.handle in self.node_has_predicted_train[graph_node]:
+                        time, distance = self.node_has_predicted_train[graph_node][a.handle]
+                        if distance < tot_dist:
+                            time = time - distance * time_per_cell
+                            if time in range(pre_step, post_step):
+                                potential_conflict = tot_dist - distance
+                     
         # if self.predictor and predicted_time < self.max_prediction_depth:
         #     int_position = coordinate_to_position(self.env.width, [position])
         #     if tot_dist < self.max_prediction_depth:
