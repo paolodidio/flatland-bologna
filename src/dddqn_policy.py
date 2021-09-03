@@ -143,7 +143,7 @@ class ConvDDDQNPolicy(Policy):
     """Dueling Double DQN policy"""
 
     Model = DuelingConvQNetwork
-    Model = DuelingConvSimpleQNetwork
+    # Model = DuelingConvSimpleQNetwork
 
     def __init__(self, state_size, action_size, parameters, node_size, evaluation_mode=False):
         self.evaluation_mode = evaluation_mode
