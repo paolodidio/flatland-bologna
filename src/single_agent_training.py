@@ -119,8 +119,8 @@ def train_agent(n_episodes, render = False):
     }
     
     # Double Dueling DQN policy
-    # policy = DDDQNPolicy(state_size, action_size, Namespace(**training_parameters))
-    policy = ConvDDDQNPolicy(state_size, action_size, Namespace(**training_parameters), n_features_per_node)
+    policy = DDDQNPolicy(state_size, action_size, Namespace(**training_parameters))
+    # policy = ConvDDDQNPolicy(state_size, action_size, Namespace(**training_parameters), n_features_per_node)
 
     for episode_idx in range(n_episodes):
         score = 0

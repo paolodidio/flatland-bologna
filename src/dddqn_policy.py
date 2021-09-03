@@ -11,6 +11,7 @@ import torch.optim as optim
 
 from src.model import DuelingQNetwork
 from src.model import DuelingConvQNetwork
+from src.model import DuelingConvSimpleQNetwork
 from src.policy import Policy
 
 
@@ -141,6 +142,9 @@ class DDDQNPolicy(Policy):
 class ConvDDDQNPolicy(Policy):
     """Dueling Double DQN policy"""
 
+    Model = DuelingConvQNetwork
+    Model = DuelingConvSimpleQNetwork
+
     def __init__(self, state_size, action_size, parameters, node_size, evaluation_mode=False):
         self.evaluation_mode = evaluation_mode
 
@@ -168,7 +172,7 @@ class ConvDDDQNPolicy(Policy):
             # print("🐢 Using CPU")
 
         # Q-Network
-        self.qnetwork_local = DuelingConvQNetwork(state_size, action_size, node_size, hidsize2=self.hidsize).to(self.device)
+        self.qnetwork_local = self.Model(state_size, action_size, node_size, hidsize2=self.hidsize).to(self.device)
 
         if not evaluation_mode:
             self.qnetwork_target = copy.deepcopy(self.qnetwork_local)
