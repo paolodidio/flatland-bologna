@@ -24,8 +24,10 @@ base_dir = Path(__file__).resolve().parent.parent
 sys.path.append(str(base_dir))
 
 from utils.timer import Timer
-from utils.observation_utils import normalize_observation
+# from utils.observation_utils import normalize_observation
+from src.utils.observation_utils import normalize_observation
 from src.dddqn_policy import DDDQNPolicy
+from src.dddqn_policy import ConvDDDQNPolicy
 
 # try:
 #     import wandb
@@ -151,6 +153,7 @@ def train_agent(train_params, train_env_params, eval_env_params, obs_params):
 
     # Double Dueling DQN policy
     policy = DDDQNPolicy(state_size, action_size, train_params)
+    # policy = ConvDDDQNPolicy(state_size, action_size, train_params, n_features_per_node)
 
     # Loads existing replay buffer
     if restore_replay_buffer:
@@ -390,7 +393,7 @@ def eval_policy(env, policy, train_params, obs_params):
             for agent in env.get_agent_handles():
                 if obs[agent]:
                     agent_obs[agent] = normalize_observation(obs[agent], tree_depth=tree_depth, observation_radius=observation_radius)
-
+                    
                 action = 0
                 if info['action_required'][agent]:
                     action = policy.act(agent_obs[agent], eps=0.0)
@@ -507,6 +510,6 @@ if __name__ == "__main__":
     pprint(evaluation_env_params)
     print("\nObservation parameters:")
     pprint(obs_params)
-
+    
     os.environ["OMP_NUM_THREADS"] = str(training_params.num_threads)
     train_agent(training_params, Namespace(**training_env_params), Namespace(**evaluation_env_params), Namespace(**obs_params))

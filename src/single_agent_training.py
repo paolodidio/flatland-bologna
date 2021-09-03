@@ -10,6 +10,7 @@ base_dir = Path(__file__).resolve().parent.parent
 sys.path.append(str(base_dir))
 
 from  src.dddqn_policy import DDDQNPolicy
+from  src.dddqn_policy import ConvDDDQNPolicy
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
@@ -17,7 +18,8 @@ from flatland.utils.rendertools import RenderTool
 from flatland.envs.rail_env import RailEnv
 from flatland.envs.rail_generators import sparse_rail_generator
 from flatland.envs.schedule_generators import sparse_schedule_generator
-from utils.observation_utils import normalize_observation
+# from utils.observation_utils import normalize_observation
+from src.utils.observation_utils import normalize_observation
 from flatland.envs.observations import TreeObsForRailEnv
 from src.observations import GraphObsForRailEnv
 from src.utils.action_required import is_action_required
@@ -117,7 +119,8 @@ def train_agent(n_episodes, render = False):
     }
     
     # Double Dueling DQN policy
-    policy = DDDQNPolicy(state_size, action_size, Namespace(**training_parameters))
+    # policy = DDDQNPolicy(state_size, action_size, Namespace(**training_parameters))
+    policy = ConvDDDQNPolicy(state_size, action_size, Namespace(**training_parameters), n_features_per_node)
 
     for episode_idx in range(n_episodes):
         score = 0
