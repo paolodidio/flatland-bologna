@@ -586,7 +586,7 @@ class TreeObsForRailEnvUsingGraph(ObservationBuilder):
                             continue
                         pos = self.predictions[a][t][1:3]
                         dir = self.predictions[a][t][3]
-                        opposite_dir = dir+2%4
+                        opposite_dir = (dir+2)%4
                         if pos[0] == pos[0] and pos[1] == pos[1]: 
                             pos = (int(pos[0]), int(pos[1]))
                             full_transitions = bin(self.env.rail.get_full_transitions(*pos))
@@ -599,10 +599,16 @@ class TreeObsForRailEnvUsingGraph(ObservationBuilder):
                                         if node not in self.node_has_predicted_train:
                                             self.node_has_predicted_train[node] = {}
                                         if a not in self.node_has_predicted_train[node]:
-                                            self.node_has_predicted_train[node][a] = (t,distance)
+                                            
+                                            self.node_has_predicted_train[node][a] = (t, t, distance)
                                         else:
-                                            t1, distance1 = self.node_has_predicted_train[node][a]
-                                            self.node_has_predicted_train[node][a] =  (t1, distance1) if distance1 < distance  else (t, distance)                        
+                                            t_min, t_max, distance_min = self.node_has_predicted_train[node][a]
+                                            if t < t_min:
+                                                self.node_has_predicted_train[node][a] = (t, t_max, distance)
+                                            elif t > t_max:
+                                                self.node_has_predicted_train[node][a] = (t_min, t, distance_min)
+                                            else:
+                                                self.node_has_predicted_train[node][a] = (t_min, t_max, distance_min)                    
                     #     pos_list.append(self.predictions[a][t][1:3])
                     #     dir_list.append(self.predictions[a][t][3])
                     # self.predicted_pos.update({t: coordinate_to_position(self.env.width, pos_list)})
@@ -792,7 +798,7 @@ class TreeObsForRailEnvUsingGraph(ObservationBuilder):
 
         # Here information about the agent itself is stored
         distance_map = self.env.distance_map.get()
-
+        
         # was referring to TreeObsForRailEnv.Node
         root_node_observation = Node(dist_own_target_encountered=0, dist_other_target_encountered=0,
                                                        dist_other_agent_encountered=0, dist_potential_conflict=0,
@@ -837,11 +843,11 @@ class TreeObsForRailEnvUsingGraph(ObservationBuilder):
                 #the agent isn't in a switch, so it should start from the first switch
                 if num_transitions == 2:
                     branch_observation, branch_visited = \
-                        self._explore_branch(handle, orientation, node, 1, 1, node_distance)
+                        self._explore_branch(handle, orientation, node, 0, 1, node_distance)
                 #the agent is already in a switch, so it should start exploring from the next one (avoid exploring the first switch two times)
                 else:
                     branch_observation, branch_visited = \
-                        self._explore_branch(handle, orientation, (out_node_row, out_node_col, out_node_direction), 1, 1, node_distance)
+                        self._explore_branch(handle, orientation, (out_node_row, out_node_col, out_node_direction), 0, 1, node_distance)
                 
                 root_node_observation.childs[self.tree_explored_actions_char[direction]] = branch_observation
                 visited |= branch_visited    
@@ -911,8 +917,13 @@ class TreeObsForRailEnvUsingGraph(ObservationBuilder):
         if len(in_edges) > 0:
             #there could be more than one in edge... to check if the graph is oriented
             for u,v,c in in_edges:
-                tot_dist_next = tot_dist + c['distance']
+                #TODO: improve
+                if tot_dist != 0:
+                    tot_dist_next = tot_dist + c['distance']
+                else:
+                    tot_dist_next = agent_to_node_distance
                 break
+            agent_to_node_distance = tot_dist_next
         
         #region #1: 
         # if own target lies on the explored branch the current distance from the agent in number of cells is stored.
@@ -948,19 +959,18 @@ class TreeObsForRailEnvUsingGraph(ObservationBuilder):
         #     0 = No other agent reserve the same cell at similar time
         predicted_time = int(tot_dist * time_per_cell)
         if self.predictor:
-            # if tot_dist < self.max_prediction_depth:
-            pre_step = max(0, predicted_time - tot_dist_next * time_per_cell)
-            post_step = max(0, predicted_time)
+            # pre_step = int(tot_dist * time_per_cell)
+            # post_step = int(tot_dist_next * time_per_cell)
             if graph_node in self.node_has_predicted_train:
                 for a in self.env.agents:
                     if a.handle == handle:
                         continue
                     if a.handle in self.node_has_predicted_train[graph_node]:
-                        time, distance = self.node_has_predicted_train[graph_node][a.handle]
-                        if distance < tot_dist:
-                            time = time - distance * time_per_cell
-                            if time in range(pre_step, post_step):
-                                potential_conflict = tot_dist - distance
+                        time_min, time_max, distance = self.node_has_predicted_train[graph_node][a.handle]
+                        #to exclude the case where the predicted train has already passed the root node
+                        if distance < agent_to_node_distance:
+                            if predicted_time in range(time_min, time_max):
+                                potential_conflict = tot_dist_next - distance
                      
         # if self.predictor and predicted_time < self.max_prediction_depth:
         #     int_position = coordinate_to_position(self.env.width, [position])
