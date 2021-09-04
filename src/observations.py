@@ -34,6 +34,7 @@ Node = collections.namedtuple('Node', 'dist_own_target_encountered '
                                         'num_agents_malfunctioning '
                                         'speed_min_fractional '
                                         'num_agents_ready_to_depart '
+                                        'is_deadlock'
                                         'childs')
 #region TreeObsForRailEnv
 class TreeObsForRailEnv(ObservationBuilder):
@@ -771,6 +772,9 @@ class TreeObsForRailEnvUsingGraph(ObservationBuilder):
         #12:
             number of agents ready to depart but no yet active
 
+        #13:
+            deadlock present in this node (if the current train will reach this node, it will cause a deadlock)
+
         Missing/padding nodes are filled in with -inf (truncated).
         Missing values in present node are filled in with +inf (truncated).
 
@@ -1028,7 +1032,7 @@ class TreeObsForRailEnvUsingGraph(ObservationBuilder):
         else:
             # dist_to_next_branch = tot_dist
             #TODO: direction?
-            row_num, col_num, dist = graph_node
+            row_num, col_num, direction = graph_node
             dist_min_to_target = self.env.distance_map.get()[handle, row_num, col_num, direction]
         #endregion
         #region #8:
@@ -1070,6 +1074,26 @@ class TreeObsForRailEnvUsingGraph(ObservationBuilder):
         if len(self.node_has_agents_ready_to_depart) > 0:
             other_agent_ready_to_depart_encountered = self.node_has_agents_ready_to_depart.get(graph_node, 0)
         #endregion
+        #region #13:
+        #    deadlock present in this node (if the current train will reach this node, it will cause a deadlock)
+        #   can be true or false (0 or 1)
+        out_edges = self.map_graph.graph.out_edges(graph_node, data=True)
+        deadlock = 1
+        for node_in,node_out, c in out_edges:
+            if not node_out in self.node_has_agent_coming_from_switch:
+                deadlock = 0
+            else:
+                other_agent_found = False
+                for other_handle, _ in self.node_has_agent_coming_from_switch[node_out]:
+                    if other_handle != handle:
+                        other_agent_found = True
+                        continue
+                if not other_agent_found:
+                    deadlock = 0
+        #endregion
+        #TODO: add new features to normalize_observation
+
+
        
         # TreeObsForRailEnv.Node
         node = Node(dist_own_target_encountered=own_target_encountered,
@@ -1084,6 +1108,7 @@ class TreeObsForRailEnvUsingGraph(ObservationBuilder):
                                       num_agents_malfunctioning=malfunctioning_agent,
                                       speed_min_fractional=min_fractional_speed,
                                       num_agents_ready_to_depart=other_agent_ready_to_depart_encountered,
+                                      is_deadlock=deadlock,
                                       childs={})
 
         # #############################
