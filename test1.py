@@ -12,7 +12,8 @@ from torch.utils.tensorboard import SummaryWriter
 import numpy as np
 import torch
 
-from flatland.envs.rail_env import RailEnv, RailEnvActions
+from flatland.envs.rail_env import RailEnvActions
+from utils.rail_env_reward import RailEnvRew
 from flatland.envs.rail_generators import sparse_rail_generator
 from flatland.envs.schedule_generators import sparse_schedule_generator
 from flatland.envs.observations import TreeObsForRailEnv
@@ -61,7 +62,7 @@ def create_rail_env(env_params, tree_observation):
         max_duration=50
     )
 
-    return RailEnv(
+    return RailEnvRew(
         width=x_dim, height=y_dim,
         rail_generator=sparse_rail_generator(
             max_num_cities=n_cities,
@@ -480,6 +481,28 @@ if __name__ == "__main__":
             "max_rails_between_cities": 2,
             "max_rails_in_city": 3,
             "malfunction_rate": 1 / 200,
+            "seed": 0
+        },
+        {
+            # Test_3  == Test_0 with no malfunctions
+            "n_agents": 2,
+            "x_dim": 25,
+            "y_dim": 25,
+            "n_cities": 2,
+            "max_rails_between_cities": 2,
+            "max_rails_in_city": 3,
+            "malfunction_rate": 0,
+            "seed": 0
+        },
+        {
+            # Test_4 
+            "n_agents": 10,
+            "x_dim": 70,
+            "y_dim": 70,
+            "n_cities": 6,
+            "max_rails_between_cities": 4,
+            "max_rails_in_city": 5,
+            "malfunction_rate": 0,
             "seed": 0
         },
     ]

@@ -1,6 +1,92 @@
-from flatland.envs.agent_utils import EnvAgent
+"""
+Definition of the RailEnv with different reward
+"""
+import random
+# TODO:  _ this is a global method --> utils or remove later
+from enum import IntEnum
+from typing import List, NamedTuple, Optional, Dict, Tuple
+
+import numpy as np
 
 
+from flatland.core.env import Environment
+from flatland.core.env_observation_builder import ObservationBuilder
+from flatland.core.grid.grid4 import Grid4TransitionsEnum, Grid4Transitions
+from flatland.core.grid.grid4_utils import get_new_position
+from flatland.core.grid.grid_utils import IntVector2D
+from flatland.core.transition_map import GridTransitionMap
+from flatland.envs.agent_utils import EnvAgent, RailAgentStatus
+from flatland.envs.distance_map import DistanceMap
+
+# Need to use circular imports for persistence.
+from flatland.envs import malfunction_generators as mal_gen
+from flatland.envs import rail_generators as rail_gen
+from flatland.envs import schedule_generators as sched_gen
+from flatland.envs import persistence
+from flatland.envs import agent_chains as ac
+
+from flatland.envs.observations import GlobalObsForRailEnv
+from gym.utils import seeding
+
+# Direct import of objects / classes does not work with circular imports.
+# from flatland.envs.malfunction_generators import no_malfunction_generator, Malfunction, MalfunctionProcessData
+# from flatland.envs.observations import GlobalObsForRailEnv
+# from flatland.envs.rail_generators import random_rail_generator, RailGenerator
+# from flatland.envs.schedule_generators import random_schedule_generator, ScheduleGenerator
+
+
+
+# Adrian Egli performance fix (the fast methods brings more than 50%)
+def fast_isclose(a, b, rtol):
+    return (a < (b + rtol)) or (a < (b - rtol))
+
+
+def fast_clip(position: Tuple[int, int], min_value: Tuple[int, int], max_value: Tuple[int, int]) -> bool:
+    return (
+        max(min_value[0], min(position[0], max_value[0])),
+        max(min_value[1], min(position[1], max_value[1]))
+    )
+
+
+def fast_argmax(possible_transitions: Tuple[int, int, int, int]) -> bool:
+    if possible_transitions[0] == 1:
+        return 0
+    if possible_transitions[1] == 1:
+        return 1
+    if possible_transitions[2] == 1:
+        return 2
+    return 3
+
+
+def fast_position_equal(pos_1: Tuple[int, int], pos_2: Tuple[int, int]) -> bool:
+    return pos_1[0] == pos_2[0] and pos_1[1] == pos_2[1]
+
+
+def fast_count_nonzero(possible_transitions: Tuple[int, int, int, int]):
+    return possible_transitions[0] + possible_transitions[1] + possible_transitions[2] + possible_transitions[3]
+
+
+class RailEnvActions(IntEnum):
+    DO_NOTHING = 0  # implies change of direction in a dead-end!
+    MOVE_LEFT = 1
+    MOVE_FORWARD = 2
+    MOVE_RIGHT = 3
+    STOP_MOVING = 4
+
+    @staticmethod
+    def to_char(a: int):
+        return {
+            0: 'B',
+            1: 'L',
+            2: 'F',
+            3: 'R',
+            4: 'S',
+        }[a]
+
+
+RailEnvGridPos = NamedTuple('RailEnvGridPos', [('r', int), ('c', int)])
+RailEnvNextAction = NamedTuple('RailEnvNextAction', [('action', RailEnvActions), ('next_position', RailEnvGridPos),
+                                                     ('next_direction', Grid4TransitionsEnum)])
 
 
 class RailEnvRew(Environment):
@@ -1032,22 +1118,35 @@ class RailEnvRew(Environment):
         persistence.RailEnvPersister.save(self, filename)
 
     
-    def manhattan_distance(pos1,pos2):
+    def manhattan_distance(self,pos1,pos2):
         return abs(pos1[0]-pos2[0])+ abs(pos1[1]-pos2[1])
 
-    def through_target(self, agent: EnvAgent):
+    def towards_target(self, agent: EnvAgent):
+        
+        old_distance=0
+        distance=0
 
-        old_distance = self.manhattan_distance(agent.position, agent.target)
-        distance = self.manhattan_distance(agent.old_position, agent.target)
+        if agent.position and not agent.old_position:
+            # if the agent has just been deployed
+            return True
 
-        if distance<old_distance:
+        # if the agent made at least one step
+        elif agent.position and agent.old_position:
+            old_distance = self.manhattan_distance(agent.old_position, agent.target)
+            distance = self.manhattan_distance(agent.position, agent.target)
+
+        if distance<old_distance:    
+            # if the agent is getting closer to the target
             return True
         else:
+            # if the agent is getting father from the target (or not deployed)
             return False
 
     def step_penalty(self, agent: EnvAgent):
-        if self.through_target(agent):
-            return -0.5 * self.alpha
+        if self.towards_target(agent):
+            # tested with 0.5 aswell
+            discount = 0.1
+            return -discount * self.alpha
         else:
             return -1 * self.alpha
 
