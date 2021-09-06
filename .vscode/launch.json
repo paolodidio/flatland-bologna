@@ -12,7 +12,7 @@
             // "program": "${file}",
             "program": "src/single_agent_training.py",
             "console": "integratedTerminal",
-            // "args": ["-n", "3", "--render", "True"],
+            // "args": ["--render", "True"],
             "justMyCode": false
         }
     ]
