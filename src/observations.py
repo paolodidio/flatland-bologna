@@ -570,7 +570,7 @@ class TreeObsForRailEnvUsingGraph(ObservationBuilder):
         super().__init__()
         # self.map_graph = map_graph
         self.max_depth = max_depth
-        self.observation_dim = 11
+        self.observation_dim = 12
         # self.location_has_agent = {}
         # self.location_has_agent_direction = {}
         self.predictor = predictor

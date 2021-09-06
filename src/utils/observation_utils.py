@@ -4,7 +4,7 @@ from flatland.envs.observations import TreeObsForRailEnv
 
 N_FEATURE_DATA = 6
 N_FEATURE_DISTANCE = 1
-N_FEATURE_AGENT_DATA = 4
+N_FEATURE_AGENT_DATA = 5
 
 def max_lt(seq, val):
     """
@@ -59,9 +59,9 @@ def norm_obs_clip(obs, clip_min=-1, clip_max=1, fixed_radius=0, normalize_to_ran
 
 
 def _split_node_into_feature_groups(node) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-    data = np.zeros(6)
-    distance = np.zeros(1)
-    agent_data = np.zeros(4)
+    data = np.zeros(N_FEATURE_DATA)
+    distance = np.zeros(N_FEATURE_DISTANCE)
+    agent_data = np.zeros(N_FEATURE_AGENT_DATA)
 
     data[0] = node.dist_own_target_encountered
     data[1] = node.dist_other_target_encountered
@@ -76,6 +76,9 @@ def _split_node_into_feature_groups(node) -> Tuple[np.ndarray, np.ndarray, np.nd
     agent_data[1] = node.num_agents_opposite_direction
     agent_data[2] = node.num_agents_malfunctioning
     agent_data[3] = node.speed_min_fractional
+    agent_data[4] = node.is_deadlock
+    # agent_data[4] = -np.inf
+    
 
     return data, distance, agent_data
 
@@ -85,7 +88,7 @@ def _split_subtree_into_feature_groups(node, current_tree_depth: int, max_tree_d
         remaining_depth = max_tree_depth - current_tree_depth
         # reference: https://stackoverflow.com/questions/515214/total-number-of-nodes-in-a-tree-data-structure
         num_remaining_nodes = int((4 ** (remaining_depth + 1) - 1) / (4 - 1))
-        return [-np.inf] * num_remaining_nodes * 6, [-np.inf] * num_remaining_nodes, [-np.inf] * num_remaining_nodes * 4
+        return [-np.inf] * num_remaining_nodes * N_FEATURE_DATA, [-np.inf] * num_remaining_nodes * N_FEATURE_DISTANCE, [-np.inf] * num_remaining_nodes * N_FEATURE_AGENT_DATA
 
     data, distance, agent_data = _split_node_into_feature_groups(node)
 

@@ -10,9 +10,9 @@
             "type": "python",
             "request": "launch",
             // "program": "${file}",
-            "program": "src/multi_agent_training.py",
+            "program": "src/single_agent_training.py",
             "console": "integratedTerminal",
-            "args": ["--num_threads", "8"],
+            // "args": ["--num_threads", "8"],
             // "args": ["-n", "3", "--render", "True"],
             "justMyCode": false
         }
