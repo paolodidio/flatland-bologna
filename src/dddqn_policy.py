@@ -173,6 +173,7 @@ class ConvDDDQNPolicy(Policy):
 
         # Q-Network
         self.qnetwork_local = self.Model(state_size, action_size, node_size, hidsize2=self.hidsize).to(self.device)
+        # TODO: make this class a subclass of DDDQNPolicy, (for example if the act function could be modified on DDDQNPolicy, we whant it modified also here)
 
         if not evaluation_mode:
             self.qnetwork_target = copy.deepcopy(self.qnetwork_local)
