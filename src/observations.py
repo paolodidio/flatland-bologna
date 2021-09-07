@@ -22,6 +22,19 @@ import networkx as nx
 from flatland.core.grid.grid4 import Grid4TransitionsEnum
 
 
+# Node = collections.namedtuple('Node', 'dist_own_target_encountered '
+#                                         'dist_other_target_encountered '
+#                                         'dist_other_agent_encountered '
+#                                         'dist_potential_conflict '
+#                                         'dist_unusable_switch '
+#                                         'dist_to_next_branch '
+#                                         'dist_min_to_target '
+#                                         'num_agents_same_direction '
+#                                         'num_agents_opposite_direction '
+#                                         'num_agents_malfunctioning '
+#                                         'speed_min_fractional '
+#                                         'num_agents_ready_to_depart '
+#                                         'childs')
 Node = collections.namedtuple('Node', 'dist_own_target_encountered '
                                         'dist_other_target_encountered '
                                         'dist_other_agent_encountered '
@@ -34,6 +47,7 @@ Node = collections.namedtuple('Node', 'dist_own_target_encountered '
                                         'num_agents_malfunctioning '
                                         'speed_min_fractional '
                                         'num_agents_ready_to_depart '
+                                        'is_deadlock '
                                         'childs')
 #region TreeObsForRailEnv
 class TreeObsForRailEnv(ObservationBuilder):
@@ -593,7 +607,7 @@ class TreeObsForRailEnvUsingGraph(ObservationBuilder):
                             for direction in Grid4TransitionsEnum:
                                 if full_transitions.count('1') > 2 and direction == dir:
                                     continue
-                                if opposite_dir == direction:
+                                if dir != direction:
                                     if (pos, direction) in self.map_graph.cell_connected_to_node:
                                         node, distance = self.map_graph.cell_connected_to_node[(pos, direction)]
                                         if node not in self.node_has_predicted_train:
@@ -628,17 +642,17 @@ class TreeObsForRailEnvUsingGraph(ObservationBuilder):
         for _agent in self.env.agents:
             # NOTE: should we include RailAgentStatus.DONE?
             if _agent.status in [RailAgentStatus.ACTIVE, RailAgentStatus.DONE] and _agent.position:
-                if _agent.position == (21,8):
-                        print()
                 for direction in Grid4TransitionsEnum:
                     if (_agent.position, direction) in self.map_graph.cell_connected_to_node:
-                        opposite_agent_direction = _agent.direction+2%4
-                        coming_from_switch = (direction == opposite_agent_direction)
+                        # opposite_agent_direction = _agent.direction+2%4
+                        coming_from_switch = (direction != _agent.direction)
                         node, distance = self.map_graph.cell_connected_to_node[(_agent.position, direction)]
                         if coming_from_switch:
-                            if not node in self.node_has_agent_coming_from_switch:
-                                self.node_has_agent_coming_from_switch[node] = []
-                            self.node_has_agent_coming_from_switch[node].append((_agent.handle, distance)) 
+                            #if the agent is in the switch, it does not count as coming from it, as it is not sure where it will move (not true for going to switch)
+                            if distance>0:
+                                if not node in self.node_has_agent_coming_from_switch:
+                                    self.node_has_agent_coming_from_switch[node] = []
+                                self.node_has_agent_coming_from_switch[node].append((_agent.handle, distance)) 
                         else:
                             if not node in self.node_has_agent_going_to_switch:
                                 self.node_has_agent_going_to_switch[node] = []
@@ -771,6 +785,9 @@ class TreeObsForRailEnvUsingGraph(ObservationBuilder):
         #12:
             number of agents ready to depart but no yet active
 
+        #13:
+            deadlock present in this node (if the current train will reach this node, it will cause a deadlock)
+
         Missing/padding nodes are filled in with -inf (truncated).
         Missing values in present node are filled in with +inf (truncated).
 
@@ -810,6 +827,7 @@ class TreeObsForRailEnvUsingGraph(ObservationBuilder):
                                                        num_agents_malfunctioning=agent.malfunction_data['malfunction'],
                                                        speed_min_fractional=agent.speed_data['speed'],
                                                        num_agents_ready_to_depart=0,
+                                                       is_deadlock=0,
                                                        childs={})
         #print("root node type:", type(root_node_observation))
 
@@ -823,8 +841,8 @@ class TreeObsForRailEnvUsingGraph(ObservationBuilder):
             orientation = np.argmax(possible_transitions)
             # (node, node_distance) = ((agent_virtual_position[0], agent_virtual_position[1], orientation), 0)
         if ((agent_virtual_position), orientation) not in self.map_graph.cell_connected_to_node:
-            print()
-        (node, node_distance) = self.map_graph.cell_connected_to_node[((agent_virtual_position), orientation)]
+            pass
+        (node, node_distance) = self.map_graph.cell_connected_to_node[((agent_virtual_position), agent.direction)]
 
         root_node_observation.childs[self.tree_explored_actions_char[0]] = -np.inf
         root_node_observation.childs[self.tree_explored_actions_char[1]] = -np.inf
@@ -1028,7 +1046,7 @@ class TreeObsForRailEnvUsingGraph(ObservationBuilder):
         else:
             # dist_to_next_branch = tot_dist
             #TODO: direction?
-            row_num, col_num, dist = graph_node
+            row_num, col_num, direction = graph_node
             dist_min_to_target = self.env.distance_map.get()[handle, row_num, col_num, direction]
         #endregion
         #region #8:
@@ -1070,6 +1088,41 @@ class TreeObsForRailEnvUsingGraph(ObservationBuilder):
         if len(self.node_has_agents_ready_to_depart) > 0:
             other_agent_ready_to_depart_encountered = self.node_has_agents_ready_to_depart.get(graph_node, 0)
         #endregion
+        #region #13:
+        #    deadlock present in this node (if the current train will reach this node, it will cause a deadlock)
+        #   can be true or false (0 or 1)
+        out_edges = self.map_graph.graph.out_edges(graph_node, data=True)
+        deadlock = 1
+        # if a train is in current node, there is deadlock
+        if other_agent_opposite_direction == 0:
+            #check connected nodes, if all of them have a train, it is a deadlock
+            x_switch, y_switch, direction_switch = graph_node
+            position_switch = (x_switch, y_switch)
+            iherent_directions = self.get_deadlock_inherent_directions(position_switch, direction_switch, [0, 0, 0 ,0])
+            for direction in Grid4TransitionsEnum:
+                # get_new_position(position, direction)
+                # xxx
+                if direction!= (direction_switch + 2) % 4 and iherent_directions[direction]:
+                    new_position = get_new_position(position_switch, direction)
+                    if (new_position, direction) not in self.map_graph.cell_connected_to_node:
+                        raise Exception("this should not be a possibl situation")
+                    next_node, _ = self.map_graph.cell_connected_to_node[(new_position, direction)]
+                    #must check that the agent is not "blocking itself" and the blocking agent are "other agents"
+                    other_agent_found = False
+                    if next_node in self.node_has_agent_coming_from_switch:
+                        for other_handle, _ in self.node_has_agent_coming_from_switch[next_node]:
+                            if other_handle != handle:
+                                other_agent_found = True
+                                continue
+                        if not other_agent_found:
+                            deadlock = 0
+                            continue
+                    else:
+                        deadlock = 0
+                        continue
+        #TODO: add new features to normalize_observation
+
+
        
         # TreeObsForRailEnv.Node
         node = Node(dist_own_target_encountered=own_target_encountered,
@@ -1081,9 +1134,11 @@ class TreeObsForRailEnvUsingGraph(ObservationBuilder):
                                       dist_min_to_target=dist_min_to_target,
                                       num_agents_same_direction=other_agent_same_direction,
                                       num_agents_opposite_direction=other_agent_opposite_direction,
+                                    #   num_agents_opposite_direction=deadlock,
                                       num_agents_malfunctioning=malfunctioning_agent,
                                       speed_min_fractional=min_fractional_speed,
                                       num_agents_ready_to_depart=other_agent_ready_to_depart_encountered,
+                                      is_deadlock=deadlock,
                                       childs={})
 
         # #############################
@@ -1145,6 +1200,21 @@ class TreeObsForRailEnvUsingGraph(ObservationBuilder):
         # if depth == self.max_depth:
         #     node.childs.clear()
         # return node, visited
+
+    def get_deadlock_inherent_directions(self, switch_position, direction, inherent_directions):
+        """
+        Given the position of a switch and an initial direction, 
+        gives all directions that interests the trains going from the given direction
+        Example: if there is a crossing and the train is going north, all directions are connected to rails,
+         but only trins coming from north or south could interest our train
+        """
+        possible_transitions = self.env.rail.get_transitions(*switch_position, direction)
+        for new_direction in Grid4TransitionsEnum:
+            if possible_transitions[new_direction]:
+                if not inherent_directions[new_direction]:
+                    inherent_directions[new_direction] = 1
+                    inherent_directions = self.get_deadlock_inherent_directions(switch_position, (new_direction + 2) % 4 , inherent_directions)
+        return inherent_directions
     
     def util_print_obs_subtree(self, tree: Node):
         """

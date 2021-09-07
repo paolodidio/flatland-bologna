@@ -74,7 +74,7 @@ class Graph:
             return (y, x, direction, distance + 1, path)
         possible_transitions = self.env.rail.get_transitions(*[y,x], direction)
         new_direction = np.argmax(possible_transitions)
-        path.append((y, x, new_direction, distance))
+        path.append((y, x, direction, distance))
         return self._explore_branch(y, x, new_direction, distance+1, path)
 
     def _draw(self):
