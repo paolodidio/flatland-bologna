@@ -62,7 +62,7 @@ class TreeObsForRailEnv(ObservationBuilder):
     """
 
 
-    tree_explored_actions_char = ['L', 'F', 'R', 'B']
+    tree_explored_actions_char = ['L', 'F', 'R']
 
     def __init__(self, max_depth: int, predictor: PredictionBuilder = None):
         super().__init__()
@@ -561,7 +561,7 @@ class TreeObsForRailEnvUsingGraph(ObservationBuilder):
     """
 
 
-    tree_explored_actions_char = ['L', 'F', 'R', 'B']
+    tree_explored_actions_char = ['L', 'F', 'R']
 
     def __init__(self, max_depth: int, 
                 # map_graph: Graph, 
@@ -847,7 +847,7 @@ class TreeObsForRailEnvUsingGraph(ObservationBuilder):
         root_node_observation.childs[self.tree_explored_actions_char[0]] = -np.inf
         root_node_observation.childs[self.tree_explored_actions_char[1]] = -np.inf
         root_node_observation.childs[self.tree_explored_actions_char[2]] = -np.inf
-        root_node_observation.childs[self.tree_explored_actions_char[3]] = -np.inf
+        # root_node_observation.childs[self.tree_explored_actions_char[3]] = -np.inf
         
         out_edges = self.map_graph.graph.out_edges(node, data=True)
         if len(out_edges) > 0:
@@ -990,43 +990,6 @@ class TreeObsForRailEnvUsingGraph(ObservationBuilder):
                             if predicted_time in range(time_min, time_max):
                                 potential_conflict = tot_dist_next - distance
                      
-        # if self.predictor and predicted_time < self.max_prediction_depth:
-        #     int_position = coordinate_to_position(self.env.width, [position])
-        #     if tot_dist < self.max_prediction_depth:
-        #         pre_step = max(0, predicted_time - 1)
-        #         post_step = min(self.max_prediction_depth - 1, predicted_time + 1)
-
-        #         # Look for conflicting paths at distance tot_dist
-        #         if int_position in np.delete(self.predicted_pos[predicted_time], handle, 0):
-        #             conflicting_agent = np.where(self.predicted_pos[predicted_time] == int_position)
-        #             for ca in conflicting_agent[0]:
-        #                 if direction != self.predicted_dir[predicted_time][ca] and cell_transitions[
-        #                     self._reverse_dir(
-        #                         self.predicted_dir[predicted_time][ca])] == 1 and tot_dist < potential_conflict:
-        #                     potential_conflict = tot_dist
-        #                 if self.env.agents[ca].status == RailAgentStatus.DONE and tot_dist < potential_conflict:
-        #                     potential_conflict = tot_dist
-        #         # Look for conflicting paths at distance num_step-1
-        #         elif int_position in np.delete(self.predicted_pos[pre_step], handle, 0):
-        #             conflicting_agent = np.where(self.predicted_pos[pre_step] == int_position)
-        #             for ca in conflicting_agent[0]:
-        #                 if direction != self.predicted_dir[pre_step][ca] \
-        #                     and cell_transitions[self._reverse_dir(self.predicted_dir[pre_step][ca])] == 1 \
-        #                     and tot_dist < potential_conflict:  # noqa: E125
-        #                     potential_conflict = tot_dist
-        #                 if self.env.agents[ca].status == RailAgentStatus.DONE and tot_dist < potential_conflict:
-        #                     potential_conflict = tot_dist
-        #         # Look for conflicting paths at distance num_step+1
-        #         elif int_position in np.delete(self.predicted_pos[post_step], handle, 0):
-        #             conflicting_agent = np.where(self.predicted_pos[post_step] == int_position)
-        #             for ca in conflicting_agent[0]:
-        #                 if direction != self.predicted_dir[post_step][ca] and cell_transitions[self._reverse_dir(
-        #                     self.predicted_dir[post_step][ca])] == 1 \
-        #                     and tot_dist < potential_conflict:  # noqa: E125
-        #                     potential_conflict = tot_dist
-        #                 if self.env.agents[ca].status == RailAgentStatus.DONE and tot_dist < potential_conflict:
-        #                     potential_conflict = tot_dist
-            
         #endregion
         #region  #5:
         #     if an not usable switch (for agent) is detected we store the distance.
@@ -1151,7 +1114,7 @@ class TreeObsForRailEnvUsingGraph(ObservationBuilder):
         node.childs[self.tree_explored_actions_char[0]] = -np.inf
         node.childs[self.tree_explored_actions_char[1]] = -np.inf
         node.childs[self.tree_explored_actions_char[2]] = -np.inf
-        node.childs[self.tree_explored_actions_char[3]] = -np.inf
+        # node.childs[self.tree_explored_actions_char[3]] = -np.inf
 
         out_edges = self.map_graph.graph.out_edges(graph_node, data=True)
         if len(out_edges) > 0:
@@ -1260,8 +1223,8 @@ class TreeObsForRailEnvUsingGraph(ObservationBuilder):
             return 1
         elif (in_dir + 1) % 4 == out_dir:
             return 2
-        elif (in_dir + 2) % 4 == out_dir:
-            return 3
+        # elif (in_dir + 2) % 4 == out_dir:
+        #     return 3
         else:
             return 0
 #region GlobalsObsForRailEnv

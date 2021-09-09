@@ -8,6 +8,10 @@ from argparse import ArgumentParser, Namespace
 from collections import deque
 from pathlib import Path
 
+from networkx.algorithms.distance_measures import periphery
+
+from utils.deadlock_check import check_for_deadlock
+
 
 
 base_dir = Path(__file__).resolve().parent.parent
@@ -27,7 +31,7 @@ from flatland.envs.schedule_generators import sparse_schedule_generator
 from src.utils.observation_utils import normalize_observation
 from flatland.envs.observations import TreeObsForRailEnv
 from src.observations import TreeObsForRailEnvUsingGraph
-from src.utils.action_required import is_action_required
+from src.utils.action_required import action_mapping, get_legal_actions, is_action_required
 from flatland.envs.predictions import ShortestPathPredictorForRailEnv
 
 """
@@ -39,7 +43,7 @@ multi_agent_training.py is a better starting point to train your own solution!
 """
 
 
-def train_agent(n_episodes, render = True):
+def train_agent(n_episodes, render = False):
     # Environment parameters
     n_agents = 3
     x_dim = 25
@@ -66,6 +70,7 @@ def train_agent(n_episodes, render = True):
     # Observation builder
     # tree_observation = TreeObsForRailEnv(max_depth=observation_tree_depth)
     predictor = ShortestPathPredictorForRailEnv(max_depth=observation_max_path_depth)
+    # tree_observation = TreeObsForRailEnv(max_depth=observation_tree_depth, predictor=predictor)
     tree_observation = TreeObsForRailEnvUsingGraph(max_depth=observation_tree_depth, predictor=predictor)
     # Setup the environment
     env = RailEnv(
@@ -74,7 +79,7 @@ def train_agent(n_episodes, render = True):
         rail_generator=sparse_rail_generator(
             max_num_cities=n_cities,
             seed=seed,
-            grid_mode=False,
+            grid_mode=True,
             max_rails_between_cities=max_rails_between_cities,
             max_rails_in_city=max_rails_in_city
         ),
@@ -92,18 +97,18 @@ def train_agent(n_episodes, render = True):
     n_features_per_node = env.obs_builder.observation_dim
     n_nodes = 0
     for i in range(observation_tree_depth + 1):
-        n_nodes += np.power(4, i)
+        n_nodes += np.power(3, i)
     state_size = n_features_per_node * n_nodes
 
     # The action space of flatland is 5 discrete actions
-    action_size = 5
+    action_size = 3
 
     # Max number of steps per episode
     # This is the official formula used during evaluations
     max_steps = int(4 * 2 * (env.height + env.width + (n_agents / n_cities)))
 
     action_dict = dict()
-
+    mapped_action_dict = dict()
     # And some variables to keep track of the progress
     scores_window = deque(maxlen=100)  # todo smooth when rendering instead
     completion_window = deque(maxlen=100)
@@ -165,18 +170,25 @@ def train_agent(n_episodes, render = True):
                 if info['action_required'][agent]:
                    # If an action is required, we want to store the obs at that step as well as the action
                     # if is_action_required(agent, env):
-                        update_values = True
-                        action = policy.act(agent_obs[agent], eps=eps_start)
+                        legal_actions = get_legal_actions(env, agent)     
+                                  
+                        action = policy.act(agent_obs[agent], legal_actions, eps=eps_start)
+                        # action = policy.act(agent_obs[agent], eps=eps_start)
+                        mapped_action = action_mapping(action, env, agent)
                         action_count[action] += 1
-                    # else: 
-                    #     update_values = False
+                        update_values = True
+                    # else:
+                    #     update_values = False 
                     #     action = 1
-                    #     action_count[action] += 1   
+                    #     mapped_action = 2
+                    #     action_count[0] += 1   
                 else:
                     update_values = False
-                    action = 0
+                    mapped_action = 0
+                    action = 2
                 action_dict.update({agent: action})
-
+                mapped_action_dict.update({agent:mapped_action})
+            
             if render:
                 env_renderer.render_env(
                    show=True,  # whether to call matplotlib show() or equivalent after completion
@@ -192,8 +204,8 @@ def train_agent(n_episodes, render = True):
                    return_image=False
                 )
             # Environment step
-            next_obs, all_rewards, done, info = env.step(action_dict)
-
+            next_obs, all_rewards, done, info = env.step(mapped_action_dict)
+                
             # Update replay buffer and train agent
             for agent in range(env.get_num_agents()):
                 # Only update the values when we are done or when an action was taken and thus relevant information is present
@@ -207,10 +219,9 @@ def train_agent(n_episodes, render = True):
                     agent_obs[agent] = normalize_observation(next_obs[agent], observation_tree_depth, observation_radius=10)
 
                 score += all_rewards[agent]
-
+            
             if done['__all__']:
                 break
-
         # Epsilon decay
         eps_start = max(eps_end, eps_decay * eps_start)
 
@@ -246,7 +257,7 @@ def train_agent(n_episodes, render = True):
     plt.plot(completion)
     plt.show()
 
-
+  
 if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument("-n", "--n_episodes", dest="n_episodes", help="number of episodes to run", default=500, type=int)
