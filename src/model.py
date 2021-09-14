@@ -35,7 +35,7 @@ class DuelingConvSimpleQNetwork(nn.Module):
     """Dueling Q-network (https://arxiv.org/abs/1511.06581)"""
 
     def __init__(self, state_size, action_size, node_size, out_channels=5, hidsize1=128, hidsize2=128):
-        super(DuelingConvQNetwork, self).__init__()
+        super(DuelingConvSimpleQNetwork, self).__init__()
 
         self.conv_out_size = int(out_channels * (state_size / node_size))
 
