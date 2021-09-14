@@ -16,7 +16,6 @@ from flatland.envs.rail_env import RailEnv, RailEnvActions
 from flatland.envs.rail_generators import sparse_rail_generator
 from flatland.envs.schedule_generators import sparse_schedule_generator
 from flatland.envs.observations import TreeObsForRailEnv
-from src.observations import TreeObsForRailEnvUsingGraph
 
 from flatland.envs.malfunction_generators import malfunction_from_params, MalfunctionParameters
 from flatland.envs.predictions import ShortestPathPredictorForRailEnv
@@ -25,6 +24,7 @@ base_dir = Path(__file__).resolve().parent.parent
 sys.path.append(str(base_dir))
 
 from utils.timer import Timer
+from src.observations import TreeObsForRailEnvUsingGraph
 # from utils.observation_utils import normalize_observation
 from src.utils.observation_utils import normalize_observation
 from src.dddqn_policy import DDDQNPolicy
@@ -113,6 +113,7 @@ def train_agent(train_params, train_env_params, eval_env_params, obs_params):
 
     # Observation builder
     predictor = ShortestPathPredictorForRailEnv(observation_max_path_depth)
+    # tree_observation = TreeObsForRailEnv(max_depth=observation_tree_depth, predictor=predictor)
     tree_observation = TreeObsForRailEnvUsingGraph(max_depth=observation_tree_depth, predictor=predictor)
 
     # Setup the environments

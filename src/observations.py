@@ -662,7 +662,7 @@ class TreeObsForRailEnvUsingGraph(ObservationBuilder):
                         if _agent.malfunction_data['malfunction'] > 0:
                             if not node in self.node_has_malfunction_agent:
                                 self.node_has_malfunction_agent[node] = []
-                            self.node_has_malfunction_agent[node].append(_agent.malfunction_data['malfunction'], distance)
+                            self.node_has_malfunction_agent[node].append((_agent.malfunction_data['malfunction'], distance))
                         
                         # if not node in self.slower_agent_speed_same_direction:
                         #     self.slower_agent_speed_same_direction[node] = []
@@ -1072,9 +1072,12 @@ class TreeObsForRailEnvUsingGraph(ObservationBuilder):
         #region #10:
         #     malfunctioning/blokcing agents
         #     n = number of time steps the oberved agent remains blocked
-        if len(self.node_has_malfunction_agent) > 0:
-            malfunctions = filter(lambda malfunction_val, distance: distance < agent_to_node_distance, self.node_has_malfunction_agent[graph_node])
-            malfunctioning_agent = self.node_has_malfunction_agent[graph_node]
+        if graph_node in self.node_has_malfunction_agent:
+            if len(self.node_has_malfunction_agent[graph_node]) > 0:
+                for malfunction, distance in self.node_has_malfunction_agent[graph_node]:
+                    if distance < agent_to_node_distance:
+                        if malfunctioning_agent < malfunction:
+                            malfunctioning_agent = malfunction
         #endregion
         #region #11:
         #     slowest observed speed of an agent in same direction
@@ -1138,7 +1141,8 @@ class TreeObsForRailEnvUsingGraph(ObservationBuilder):
                                       num_agents_malfunctioning=malfunctioning_agent,
                                       speed_min_fractional=min_fractional_speed,
                                       num_agents_ready_to_depart=other_agent_ready_to_depart_encountered,
-                                      is_deadlock=deadlock,
+                                      is_deadlock=0,
+                                    #   is_deadlock=deadlock,
                                       childs={})
 
         # #############################
