@@ -27,6 +27,7 @@ from flatland.envs import agent_chains as ac
 
 from flatland.envs.observations import GlobalObsForRailEnv
 from gym.utils import seeding
+from src.utils.deadlock_check import get_all_trains_in_deadlock
 
 # Direct import of objects / classes does not work with circular imports.
 # from flatland.envs.malfunction_generators import no_malfunction_generator, Malfunction, MalfunctionProcessData
@@ -493,6 +494,9 @@ class RailEnvRew(Environment):
         action_dict_ : Dict[int,RailEnvActions]
 
         """
+
+        free_agents, self.blocked_agents = get_all_trains_in_deadlock(self)
+
         self._elapsed_steps += 1
 
         # If we're done, set reward and info_dict and step() is done.
@@ -605,6 +609,7 @@ class RailEnvRew(Environment):
         action_dict_ : Dict[int,RailEnvActions]
 
         """
+
         agent = self.agents[i_agent]
         if agent.status in [RailAgentStatus.DONE, RailAgentStatus.DONE_REMOVED]:  # this agent has already completed...
             return
@@ -1143,11 +1148,23 @@ class RailEnvRew(Environment):
             return False
 
     def step_penalty(self, agent: EnvAgent):
-        if self.towards_target(agent):
+        DEADLOCK_PENALTY = 2
+        modifier = 1
+        if agent.handle in self.blocked_agents:
+            modifier = DEADLOCK_PENALTY
+        elif self.towards_target(agent):
             # tested with 0.5 aswell
-            discount = 0.1
-            return -discount * self.alpha
-        else:
-            return -1 * self.alpha
+            modifier = 0.1
+        return -1 * modifier * self.alpha
+
+    # def step_penalty(self, agent: EnvAgent):
+    #     modifier = 1
+    #     if self.towards_target(agent):
+    #         # tested with 0.5 aswell
+    #         modifier = 0.1
+    #     return -1 * modifier * self.alpha
+
+    # def step_penalty(self, agent: EnvAgent):
+    #     return -1 * self.alpha
 
     
