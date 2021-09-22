@@ -19,7 +19,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 
-from flatland.envs.rail_env import RailEnv
+# from flatland.envs.rail_env import RailEnv
+from src.utils.rail_env_reward import RailEnvRew
 from flatland.utils.rendertools import RenderTool
 from flatland.envs.rail_generators import sparse_rail_generator
 from flatland.envs.schedule_generators import sparse_schedule_generator
@@ -68,7 +69,7 @@ def train_agent(n_episodes, render = True):
     predictor = ShortestPathPredictorForRailEnv(max_depth=observation_max_path_depth)
     tree_observation = TreeObsForRailEnvUsingGraph(max_depth=observation_tree_depth, predictor=predictor)
     # Setup the environment
-    env = RailEnv(
+    env = RailEnvRew(
         width=x_dim,
         height=y_dim,
         rail_generator=sparse_rail_generator(
