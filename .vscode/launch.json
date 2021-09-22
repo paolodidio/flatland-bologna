@@ -9,8 +9,9 @@
             "type": "python",
             "request": "launch",
             // "program": "${file}",
-            "program": "reinforcement_learning/multi_agent_training.py",
-            "console": "integratedTerminal"
+            "console": "integratedTerminal",
+            "program": "src/multi_agent_training.py",
+            "justMyCode": false
         }
     ]
 }

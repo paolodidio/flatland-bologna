@@ -13,6 +13,8 @@ import numpy as np
 import torch
 
 from utils.rail_env_reward import RailEnvRew
+from flatland.utils.rendertools import RenderTool
+from flatland.envs.rail_env import RailEnv
 from flatland.envs.rail_generators import sparse_rail_generator
 from flatland.envs.schedule_generators import sparse_schedule_generator
 from utils.observation_utils import normalize_observation
@@ -27,9 +29,9 @@ multi_agent_training.py is a better starting point to train your own solution!
 """
 
 
-def train_agent(n_episodes):
+def train_agent(n_episodes, render = False):
     # Environment parameters
-    n_agents = 1
+    n_agents = 2
     x_dim = 25
     y_dim = 25
     n_cities = 4
@@ -38,7 +40,7 @@ def train_agent(n_episodes):
     seed = 42
 
     # Observation parameters
-    observation_tree_depth = 2
+    observation_tree_depth = 5
     observation_radius = 10
 
     # Exploration parameters
@@ -70,6 +72,8 @@ def train_agent(n_episodes):
     )
 
     env.reset(True, True)
+    if render:
+        env_renderer = RenderTool(env, gl="PGL")
 
     # Calculate the state size given the depth of the tree observation and the number of features
     n_features_per_node = env.obs_builder.observation_dim
@@ -110,7 +114,7 @@ def train_agent(n_episodes):
         'hidden_size': 256,
         'use_gpu': False
     }
-
+    
     # Double Dueling DQN policy
     policy = DDDQNPolicy(state_size, action_size, Namespace(**training_parameters))
 
@@ -129,6 +133,7 @@ def train_agent(n_episodes):
         # Run episode
         for step in range(max_steps - 1):
             for agent in env.get_agent_handles():
+                
                 if info['action_required'][agent]:
                     # If an action is required, we want to store the obs at that step as well as the action
                     update_values = True
@@ -141,7 +146,13 @@ def train_agent(n_episodes):
 
             # Environment step
             next_obs, all_rewards, done, info = env.step(action_dict)
-
+            if render:
+                env_renderer.render_env(
+                        show=True,
+                        frames=False,
+                        show_observations=False,
+                        show_predictions=False
+                    )
             # Update replay buffer and train agent
             for agent in range(env.get_num_agents()):
                 # Only update the values when we are done or when an action was taken and thus relevant information is present
