@@ -11,6 +11,8 @@ from reinforcement_learning.dddqn_policy import DDDQNPolicy
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
+
+from utils.rail_env_reward import RailEnvRew
 from flatland.utils.rendertools import RenderTool
 from flatland.envs.rail_env import RailEnv
 from flatland.envs.rail_generators import sparse_rail_generator
@@ -54,7 +56,7 @@ def train_agent(n_episodes, render = False):
     tree_observation = TreeObsForRailEnv(max_depth=observation_tree_depth)
 
     # Setup the environment
-    env = RailEnv(
+    env = RailEnvRew(
         width=x_dim,
         height=y_dim,
         rail_generator=sparse_rail_generator(

@@ -1,0 +1,27 @@
+{
+    "os": "Linux-5.4.72-microsoft-standard-WSL2-x86_64-with-debian-bullseye-sid",
+    "python": "3.6.8",
+    "heartbeatAt": "2021-08-29T10:00:47.097052",
+    "startedAt": "2021-08-29T10:00:46.251485",
+    "docker": null,
+    "cpu_count": 12,
+    "cuda": null,
+    "args": [
+        "-n",
+        "1",
+        "--num_threads",
+        "8"
+    ],
+    "state": "running",
+    "program": "test1.py",
+    "codePath": "test1.py",
+    "git": {
+        "remote": "https://github.com/paolodidio/flatland-bologna.git",
+        "commit": "bcf5aa83fca114c15bc4d5463bf2aa4a9745f353"
+    },
+    "email": "pdidio@live.it",
+    "root": "/home/pdidio/test/flatland-starter-kit",
+    "host": "LAPTOP-U4I5V6NL",
+    "username": "pdidio",
+    "executable": "/home/pdidio/miniconda3/envs/flatland-rl/bin/python"
+}

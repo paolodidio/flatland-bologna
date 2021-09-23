@@ -4,16 +4,13 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
-    
         {
             "name": "Python: Current File",
             "type": "python",
             "request": "launch",
             // "program": "${file}",
-            "program": "src/single_agent_training.py",
             "console": "integratedTerminal",
-            // "args": ["--num_threads", "8"],
-            // "args": ["-n", "3", "--render", "True"],
+            "program": "src/multi_agent_training.py",
             "justMyCode": false
         }
     ]

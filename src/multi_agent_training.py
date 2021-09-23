@@ -12,7 +12,7 @@ from torch.utils.tensorboard import SummaryWriter
 import numpy as np
 import torch
 
-from flatland.envs.rail_env import RailEnv, RailEnvActions
+from flatland.envs.rail_env import RailEnvActions
 from flatland.envs.rail_generators import sparse_rail_generator
 from flatland.envs.schedule_generators import sparse_schedule_generator
 from flatland.envs.observations import TreeObsForRailEnv
@@ -23,6 +23,8 @@ from flatland.envs.predictions import ShortestPathPredictorForRailEnv
 base_dir = Path(__file__).resolve().parent.parent
 sys.path.append(str(base_dir))
 
+# from flatland.envs.rail_env import RailEnv
+from src.utils.rail_env_reward import RailEnvRew
 from utils.timer import Timer
 from src.observations import TreeObsForRailEnvUsingGraph
 # from utils.observation_utils import normalize_observation
@@ -62,7 +64,7 @@ def create_rail_env(env_params, tree_observation):
         max_duration=50
     )
 
-    return RailEnv(
+    return RailEnvRew(
         width=x_dim, height=y_dim,
         rail_generator=sparse_rail_generator(
             max_num_cities=n_cities,
